@@ -2,6 +2,11 @@
 
 #define MAX_CODE_LEN 4096
 
+/* Registers reserved for the interpreter */
+register uint8_t *ip asm ("r12");
+register uint64_t *stack_top asm ("r13");
+register uint64_t acc asm ("r14");
+
 typedef enum interpret_result {
     SUCCESS,
     ERROR_DIVISION_BY_ZERO,

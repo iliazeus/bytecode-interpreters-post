@@ -12,13 +12,19 @@
 #define MEMORY_SIZE 65536
 
 #define LOAD_REGS()                             \
-    register uint8_t *ip = vm.ip;               \
-    register uint64_t *stack_top = vm.stack_top;\
-    register uint64_t acc = vm.acc
+    uint8_t *_saved_ip = ip;                    \
+    uint64_t *_saved_stack_top = stack_top;     \
+    uint64_t _saved_acc = acc;                  \
+    ip = vm.ip;                                 \
+    stack_top = vm.stack_top;                   \
+    acc = vm.acc
 #define STORE_REGS()                            \
     vm.ip = ip;                                 \
     vm.stack_top = stack_top;                   \
-    vm.acc = acc
+    vm.acc = acc;                               \
+    ip = _saved_ip;                             \
+    stack_top = _saved_stack_top;               \
+    acc = _saved_acc
 #define NEXT_OP()                               \
     (*ip++)
 #define NEXT_ARG()                                      \
