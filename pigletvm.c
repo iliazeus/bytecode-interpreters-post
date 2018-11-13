@@ -627,12 +627,22 @@ uint64_t vm_get_result(void)
  * trace-based vm interpreter
  * */
 
+#define LOAD_REGS()                             \
+    uint64_t *_saved_stack_top = stack_top;     \
+    uint64_t _saved_acc = acc;                  \
+    stack_top = vm_trace.stack_top;             \
+    acc = vm_trace.acc
+#define STORE_REGS()                            \
+    vm_trace.stack_top = stack_top;             \
+    vm_trace.acc = acc;                         \
+    stack_top = _saved_stack_top;               \
+    acc = _saved_acc
 #define POP()                                   \
-    (*(--vm_trace.stack_top))
+    ({ uint64_t tmp = acc; acc = *(--stack_top); tmp; })
 #define PUSH(val)                               \
-    (*vm_trace.stack_top = (val), vm_trace.stack_top++)
-#define TOP()                                   \
-    (*(vm_trace.stack_top - 1))
+    (*stack_top = acc, stack_top++, acc = (val))
+#define TOP()                                  \
+    (acc)
 #define NEXT_HANDLER(code)                      \
     (((code)++), (code)->handler((code)))
 #define ARG_AT_PC(bytecode, pc)                                         \
@@ -657,6 +667,9 @@ static struct {
     interpret_result error;
 
     trace trace_cache[MAX_CODE_LEN];
+
+    /* Accumulator register holding the top value of the stack */
+    uint64_t acc;
 
     /* Fixed-size stack */
     uint64_t stack[STACK_MAX];
@@ -1008,12 +1021,16 @@ interpret_result vm_interpret_trace(uint8_t *bytecode)
 {
     vm_trace_reset(bytecode);
 
+    LOAD_REGS();
+
     if (!setjmp(vm_trace.buf)) {
         while(vm_trace.is_running) {
             scode *code = &vm_trace.trace_cache[vm_trace.pc][0];
             code->handler(code);
         }
     }
+
+    STORE_REGS();
 
     return vm_trace.error;
 }
